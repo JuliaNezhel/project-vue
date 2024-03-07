@@ -7,6 +7,7 @@
           placeholder="Название"
       />
       <my-input
+          v-focus
           v-model="posts.body"
           type="text"
           placeholder="Описание"
