@@ -22,6 +22,20 @@
         v-if="!isPostsLoading"
     />
     <div v-else>Loading...</div>
+    <div ref="observer" class="observer"></div>
+    <!--    <div class="page__wrapper">-->
+    <!--      <div-->
+    <!--          v-for="pageNumber in totalPages"-->
+    <!--          :key="pageNumber"-->
+    <!--          class="page"-->
+    <!--          :class="{-->
+    <!--            'currentPage': pageNumber === page-->
+    <!--          }"-->
+    <!--          @click="changePage(pageNumber)"-->
+    <!--      >-->
+    <!--        {{ pageNumber }}-->
+    <!--      </div>-->
+    <!--    </div>-->
   </div>
 </template>
 
@@ -50,7 +64,9 @@ export default {
       isPostsLoading: false,
       selectedSort: '',
       searchQuery: '',
-      limit: 1,
+      page: 1,
+      limit: 10,
+      totalPages: 0,
       sortOption: [
         {value: 'title', name: 'По названию'},
         {value: 'body', name: 'По содержанию'}
@@ -67,12 +83,40 @@ export default {
     showDialog() {
       this.dialogVisible = true
     },
+    // changePage(pageNumber) {
+    //   this.page = pageNumber
+    // },
+
     async fetchPosts() {
       try {
         this.isPostsLoading = true
-        const res = await axios.get('https://jsonplaceholder.typicode.com/posts?_limit=10')
+        const res = await axios.get('https://jsonplaceholder.typicode.com/posts',
+            {
+              params: {
+                _page: this.page,
+                _limit: this.limit,
+              }
+            })
         this.posts = res.data
         this.isPostsLoading = false
+        this.totalPages = Math.ceil(res.headers['x-total-count'] / this.limit)
+      } catch (e) {
+        alert('Валя')
+      }
+    },
+    async loadMorePosts() {
+      try {
+        this.page += 1
+        // this.isPostsLoading = true
+        const res = await axios.get('https://jsonplaceholder.typicode.com/posts',
+            {
+              params: {
+                _page: this.page,
+                _limit: this.limit,
+              }
+            })
+        this.totalPages = Math.ceil(res.headers['x-total-count'] / this.limit)
+        this.posts = [...this.posts, ...res.data]
       } catch (e) {
         alert('Валя')
       }
@@ -80,6 +124,19 @@ export default {
   },
   mounted() {
     this.fetchPosts()
+    console.log(this.$refs.observer)
+    const options = {
+      rootMargin: "0px",
+      threshold: 1.0,
+    };
+    const callback = (entries, observer) => {
+      /* Content excerpted, show below */
+      if (entries[0].isIntersecting && this.page < this.totalPages) {
+        this.loadMorePosts()
+      }
+    };
+    const observer = new IntersectionObserver(callback, options);
+    observer.observe(this.$refs.observer)
   },
   computed: {
     sortedPost() {
@@ -87,10 +144,15 @@ export default {
         return post1[this.selectedSort]?.localeCompare(post2[this.selectedSort])
       })
     },
-    sortedAndSearchedPosts(){
+    sortedAndSearchedPosts() {
       return this.sortedPost.filter(post => post.title.toLowerCase().includes(this.searchQuery.toLowerCase()))
     }
   },
+  watch: {
+    // page() {
+    //   this.fetchPosts()
+    // }
+  }
 };
 </script>
 
@@ -108,5 +170,28 @@ export default {
 .add__btn {
   display: flex;
   justify-content: space-between;
+}
+
+.page__wrapper {
+  display: flex;
+  margin-top: 15px;
+  gap: 5px;
+
+}
+
+.page {
+  border: 1px solid cornflowerblue;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.currentPage {
+  border: 2px solid cornflowerblue;
+
+}
+
+.observer {
+  height: 30px;
+  background: green;
 }
 </style>
