@@ -5,7 +5,8 @@
       <div><strong>Описание/Тело </strong>{{ post.body }}</div>
       <div><strong>Заголовок </strong>{{ post.title }}</div>
     </div>
-    <div>
+    <div class="post__btns">
+      <my-button @click="$router.push(`/posts/${post.id}`)">open</my-button>
       <my-button @click='$emit("remove",post)' >delete</my-button>
     </div>
   </div>
@@ -14,7 +15,10 @@
 
 
 
+import MyButton from "@/components/UI/MyButton.vue";
+
 export default {
+  components: {MyButton},
   props: {
     post: {
       type: Object,
