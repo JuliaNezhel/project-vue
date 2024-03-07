@@ -1,30 +1,112 @@
 <template>
-  <nav>
-    <router-link to="/">Home</router-link> |
-    <router-link to="/about">About</router-link>
-  </nav>
-  <router-view/>
+  <div class="app">
+    <h1>Страница с постами</h1>
+    <my-input
+        v-model="searchQuery"
+        aria-placeholder="Поиск..."
+    ></my-input>
+    <div class="add__btn">
+      <my-button @click="showDialog">Создать пост</my-button>
+      <my-select
+          v-model="selectedSort"
+          :options="sortOption"
+
+      ></my-select>
+    </div>
+    <my-dialog v-model:show="dialogVisible">
+      <post-form @create="createPost"/>
+    </my-dialog>
+    <post-list
+        :posts="sortedAndSearchedPosts"
+        @remove="removePost"
+        v-if="!isPostsLoading"
+    />
+    <div v-else>Loading...</div>
+  </div>
 </template>
 
+<script>
+import PostForm from '@/components/PostForm.vue';
+import PostList from '@/components/PostList.vue';
+import MyDialog from "@/components/UI/MyDialog.vue";
+import MyButton from "@/components/UI/MyButton.vue";
+import axios from "axios";
+import MySelect from "@/components/UI/MySelect.vue";
+import MyInput from "@/components/UI/MyInput.vue";
+
+export default {
+  components: {
+    MyInput,
+    MySelect,
+    MyButton,
+    MyDialog,
+    PostForm,
+    PostList
+  },
+  data() {
+    return {
+      posts: [],
+      dialogVisible: false,
+      isPostsLoading: false,
+      selectedSort: '',
+      searchQuery: '',
+      limit: 1,
+      sortOption: [
+        {value: 'title', name: 'По названию'},
+        {value: 'body', name: 'По содержанию'}
+      ],
+    };
+  },
+  methods: {
+    createPost(post) {
+      this.posts.push(post)
+    },
+    removePost(post) {
+      this.posts = this.posts.filter(p => p.id !== post.id)
+    },
+    showDialog() {
+      this.dialogVisible = true
+    },
+    async fetchPosts() {
+      try {
+        this.isPostsLoading = true
+        const res = await axios.get('https://jsonplaceholder.typicode.com/posts?_limit=10')
+        this.posts = res.data
+        this.isPostsLoading = false
+      } catch (e) {
+        alert('Валя')
+      }
+    },
+  },
+  mounted() {
+    this.fetchPosts()
+  },
+  computed: {
+    sortedPost() {
+      return [...this.posts].sort((post1, post2) => {
+        return post1[this.selectedSort]?.localeCompare(post2[this.selectedSort])
+      })
+    },
+    sortedAndSearchedPosts(){
+      return this.sortedPost.filter(post => post.title.toLowerCase().includes(this.searchQuery.toLowerCase()))
+    }
+  },
+};
+</script>
+
 <style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-nav {
-  padding: 30px;
+.app {
+  margin: 20px;
 }
 
-nav a {
-  font-weight: bold;
-  color: #2c3e50;
-}
-
-nav a.router-link-exact-active {
-  color: #42b983;
+.add__btn {
+  display: flex;
+  justify-content: space-between;
 }
 </style>
